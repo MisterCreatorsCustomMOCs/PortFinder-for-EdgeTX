@@ -78,7 +78,7 @@ return {
   id = "mk60",
   name = "Mould King 6.0",
   short = "MK 6.0",
-  author = "MisterCreators",
+  author = "MisterCreators Custom MOCs",
   version = "1.0",
   x0 = 0, y0 = 0, w = 1509, h = 849,
   channels = 6,

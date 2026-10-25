@@ -15,7 +15,7 @@ local toolName = "TNS|PortFinder|TNE"
 
 local APP_NAME = "PortFinder"
 local VERSION  = "v2.0"
-local CREDIT   = "by MisterCreators"
+local CREDIT   = "by MisterCreators Custom MOCs"
 
 ---------------------------------------------------------------------
 -- Settings
@@ -62,7 +62,7 @@ local TXT = {
     detect = "Erkennen", clear = "Leeren", sure = "Wirklich?", apply = "Übernehmen",
     needSrc = "Erst eine Quelle wählen", nothing = "Nichts erkannt",
     detected = "Erkannt: ", cleared = "Alle Mixer auf CH%d entfernt",
-    setupTitle = "Box für dieses Modell", ports = "Ports",
+    setupTitle = "Box für dieses Modell", ports = "Ports", language = "Sprache: Deutsch",
     by = "von ", noLayouts = "Keine Layouts gefunden in",
     saved = "Setup gespeichert für ",
   },
@@ -85,7 +85,7 @@ local TXT = {
     detect = "Detect", clear = "Clear", sure = "Sure?", apply = "Apply",
     needSrc = "Select a source first", nothing = "Nothing detected",
     detected = "Detected: ", cleared = "All mixes on CH%d removed",
-    setupTitle = "Box for this model", ports = "ports",
+    setupTitle = "Box for this model", ports = "ports", language = "Language: English",
     by = "by ", noLayouts = "No layouts found in",
     saved = "Setup saved for ",
   },
@@ -735,13 +735,8 @@ local function drawWarning()
 end
 
 local function drawTitleControls()
-  button(150, 6, 40, 26, string.upper(lang), function()
-    lang = (lang == "de") and "en" or "de"
-    saveCfg()
-  end, nil, true)
-
   -- box button: opens the box list
-  local x, w = 198, 126
+  local x, w = 198, 126 -- right of the name and credit
   rect(x, 6, w, 26, C.btn)
   local name = setup and setup.name or "-"
   text(x + 8, 11, name, SMLSIZE + C.white)
@@ -818,8 +813,8 @@ end
 local function drawMain()
   lcd.clear(C.bg)
   titleBar(nil)
-  text(12, 2, APP_NAME, C.white)
-  text(12, 21, VERSION .. "  ·  " .. CREDIT, SMLSIZE + C.text)
+  text(12, 2, APP_NAME .. " " .. VERSION, C.white)
+  text(12, 21, CREDIT, SMLSIZE + C.text)
   drawTitleControls()
   drawDevices(38, H - 54)
   drawBottomBar()
@@ -853,8 +848,12 @@ local function drawSetup()
   end
   local by = H - 44
   rect(0, by, W, 44, C.bar)
+  button(6, by + 6, 150, 32, T("language"), function()
+    lang = (lang == "de") and "en" or "de"
+    saveCfg()
+  end, nil, true)
   if pages > 1 then
-    text(10, by + 12, setupPage .. " / " .. pages, C.text)
+    text(W - 150, by + 12, setupPage .. " / " .. pages, RIGHT + C.text)
     button(W - 140, by, 65, 44, "<", function() setupPage = (setupPage - 2) % pages + 1 end)
     button(W - 70, by, 70, 44, ">", function() setupPage = setupPage % pages + 1 end)
   end

@@ -83,7 +83,7 @@ return {
   id = "mk40",
   name = "Mould King 4.0",
   short = "MK 4.0",
-  author = "MisterCreators",
+  author = "MisterCreators Custom MOCs",
   version = "1.0",
   x0 = 0, y0 = 0, w = 388, h = 195,
   channels = 4,

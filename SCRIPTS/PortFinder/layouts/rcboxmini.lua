@@ -142,7 +142,7 @@ return {
   id = "rcboxmini",
   name = "RC Box Mini",
   short = "RC Box Mini",
-  author = "MisterCreators",
+  author = "MisterCreators Custom MOCs",
   version = "1.0",
   x0 = 20, y0 = 20, w = 1960, h = 1580,
   channels = 8,

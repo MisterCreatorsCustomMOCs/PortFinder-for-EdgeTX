@@ -46,7 +46,7 @@ CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
 - **Visual mixer builder:** assign sticks, pots, switches, logical switches, other channels,
   MAX or global variables, with weight, invert and channel name.
 - **Auto detect:** tap *Detect*, move a stick, pot or switch, and it is selected.
-- **English and German:** switch with one tap.
+- **English and German:** switch with one tap in the box list.
 - **Clean exit:** temporary test mixes are always removed, even after a crash or power loss.
 
 ## Requirements
@@ -92,7 +92,8 @@ the channel moves even when an ESC or a drive motor is connected. Tap **Understo
 Tap the box button in the title bar (it shows the current box) and pick your box. Next to it
 you find the switches for extra boxes: **Slave Box** for the RC Box Mini, **+ MK 6.0** and
 **+ MK 4.0** for the Mould King 6.0, and a **– 1x +** counter for the Mould King 4.0.
-Everything is saved for the current model.
+Everything is saved for the current model. The button at the bottom of the box list switches
+the language between English and German.
 
 ### 3. Find a port
 
@@ -108,7 +109,7 @@ Everything is saved for the current model.
 - The bar at the bottom shows the box, the port, its channel and its current assignment.
 - RC Box Mini shows the channel number at each port. Mould King boxes show the port letter
   printed on the box; the channels are shown above each box.
-- **EN / DE** switches the language. The red **X** closes the tool on every screen.
+- The red **X** closes the tool on every screen.
 
 ### 4. Assign a function
 
