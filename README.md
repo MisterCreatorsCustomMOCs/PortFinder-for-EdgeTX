@@ -1,63 +1,77 @@
-![RC Box PortFinder](images/banner.png)
+![PortFinder](images/banner.png)
 
-# RC Box PortFinder
+# PortFinder
 
-**Version 1.3** · EdgeTX Lua tool for the **RC Box Mini** · made for the Flysky Paladin PL18 (EdgeTX)
+**Version 2.0** · EdgeTX Lua tool · made by **MisterCreators Custom MOCs** ([mistercreator.de](https://mistercreator.de))
 
-RC Box PortFinder shows a top view of your RC Box Mini on the transmitter's touchscreen.
-Tap a port and the matching channel wiggles back and forth a few times, so you can see
-right away which motor or function is connected to it. Then you can assign a stick, pot,
-switch or other source to that channel directly, without digging through the mixer menus.
+PortFinder shows a top view of your RC box on the transmitter's touchscreen. Tap a port and
+the matching channel wiggles back and forth a few times, so you can see right away which motor
+or function is connected to it. Then assign a stick, pot, switch or other source to that channel
+directly, without digging through the mixer menus.
 
-![Main screen](images/main_single.png)
+PortFinder is made for specific boxes. Each box is a small layout file, so more boxes can be
+added later.
+
+![PortFinder with an RC Box Mini](images/main_rcbox1.png)
+
+## Supported boxes
+
+Choose your box, then add more boxes with the switches in the title bar. PortFinder remembers
+the choice **for each model**.
+
+| Box | Ports | Extra boxes (title bar) | Combinations |
+|-----|-------|-------------------------|--------------|
+| RC Box Mini | 8 (4 PF, 4 servo) | **Slave Box** switch | 1 or 2 boxes, CH1–16 |
+| Mould King 6.0 | 6 PF (A–F) | **+ MK 6.0** and **+ MK 4.0** switches | MK6, 2x MK6, MK6 + MK4, 2x MK6 + MK4 |
+| Mould King 4.0 | 4 PF (A–D) | **– 1x +** counter | 1 to 4 boxes |
+
+The boxes use the channels one after the other: with 2x MK 6.0 + MK 4.0 the first MK 6.0 is on
+CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
+
+> **Mould King boxes** are controlled with a 4in1 multiprotocol module running the
+> Mould King protocol (a community firmware). Ports A–F of the first box react to CH1–6,
+> further boxes follow on the next channels. Your radio and module must support this
+> protocol; PortFinder itself only moves the channels.
+
+<p>
+  <img src="images/main_mk6x2mk4.png" alt="2x MK 6.0 + MK 4.0" width="49%">
+  <img src="images/main_mk4x4.png" alt="4x MK 4.0" width="49%">
+</p>
 
 ## Features
 
-- **Visual port map.** A to-scale top view of the RC Box Mini with all 8 ports:
-  4 Power Functions ports and 4 servo headers.
-- **Port test.** Tap a port and its channel moves ±30 % around its current position, 3 times.
-- **Slave box support.** One switch adds a second RC Box Mini for channels 9–16.
-- **Visual mixer builder.** Assign sticks, pots, switches, logical switches, other channels,
-  MAX or global variables to a port. You can also set the weight, invert the direction and
-  pick a channel name.
-- **Auto detect.** Tap *Detect*, move a stick, pot or switch, and it is selected as the source.
-- **Live values.** Every source button shows a small bar with its current value.
-- **English and German.** Switch the language with one tap. Your choice is saved.
-- **Clean exit.** Temporary test mixes are always removed, even after a crash or power loss.
-
-## Port layout
-
-| Port | Type | Position (top view) | Master box | Slave box |
-|------|------|---------------------|------------|-----------|
-| 1 | Power Functions | top left | CH1 | CH9 |
-| 2 | Power Functions | bottom left | CH2 | CH10 |
-| 3 | Power Functions | bottom right | CH3 | CH11 |
-| 4 | Power Functions | top right | CH4 | CH12 |
-| 5 | Servo header | center, row 1 | CH5 | CH13 |
-| 6 | Servo header | center, row 2 | CH6 | CH14 |
-| 7 | Servo header | center, row 3 | CH7 | CH15 |
-| 8 | Servo header | center, row 4 | CH8 | CH16 |
-
-The yellow XT30 connector at the top center is the main power input.
+- **Visual port map:** a top view of each box with all its ports.
+- **Port test:** tap a port and its channel moves ±30 % around its current position, 3 times.
+- **Box choice per model:** one box, or more boxes added with a switch, saved per model.
+- **Visual mixer builder:** assign sticks, pots, switches, logical switches, other channels,
+  MAX or global variables, with weight, invert and channel name.
+- **Auto detect:** tap *Detect*, move a stick, pot or switch, and it is selected.
+- **English and German:** switch with one tap.
+- **Clean exit:** temporary test mixes are always removed, even after a crash or power loss.
 
 ## Requirements
 
-- A transmitter running **EdgeTX** with a color touchscreen. The tool was developed for the
-  Flysky Paladin PL18 (480 × 320).
-- One or two RC Box Mini units connected to your receiver.
+- A transmitter running **EdgeTX** with a colour touchscreen. Developed on a Flysky Paladin
+  PL18 (480 × 320).
+- The RC box(es) of your setup connected to your receiver or multiprotocol module.
 
 ## Installation
 
 1. Download this repository (green **Code** button → **Download ZIP**) and unzip it.
-2. Connect your transmitter to your computer via USB and choose **USB Storage (SD)**,
-   or take out the SD card.
-3. Copy `SCRIPTS/TOOLS/RCBoxPortFinder.lua` to the folder `/SCRIPTS/TOOLS/` on the SD card.
-4. If you used an older version called `PortFinder.lua`, delete it to avoid duplicates.
-5. Eject the transmitter or SD card safely and restart the radio if needed.
-6. Open the **Tools** menu on the transmitter. **RC Box PortFinder** is now listed there.
+2. Connect your transmitter via USB (**USB Storage (SD)**) or take out the SD card.
+3. Copy the folder `SCRIPTS` to the SD card, so you get:
+   ```
+   /SCRIPTS/TOOLS/PortFinder.lua
+   /SCRIPTS/PortFinder/layouts/rcboxmini.lua
+   /SCRIPTS/PortFinder/layouts/mk60.lua
+   /SCRIPTS/PortFinder/layouts/mk40.lua
+   ```
+4. **Updating from v1.x:** delete `/SCRIPTS/TOOLS/RCBoxPortFinder.lua` (and `PortFinder.lua`
+   from v1.0), otherwise the old tool stays in the menu.
+5. Open the **Tools** menu on the transmitter and start **PortFinder**.
 
-The tool creates a small settings file, `/SCRIPTS/TOOLS/RCBoxPortFinder.cfg`, which stores
-the language and the slave box setting.
+The tool saves its settings (language and the boxes of each model) in
+`/SCRIPTS/PortFinder/PortFinder.cfg`.
 
 ## How to use
 
@@ -65,70 +79,110 @@ the language and the slave box setting.
 
 ![Warning screen](images/warning.png)
 
-When the tool starts, it shows a safety notice. **Remove propellers, lift wheels off the
-ground and secure all moving parts.** During a test, the channel moves even when an ESC
-or a drive motor is connected to it. Tap **Understood – Start** to continue.
+**Remove propellers, lift wheels off the ground and secure all moving parts.** During a test
+the channel moves even when an ESC or a drive motor is connected. Tap **Understood – Start**.
 
-### 2. Find a port
+### 2. Choose your boxes
 
-![Port test with slave box](images/main_slave_test.png)
+<p>
+  <img src="images/setup_list.png" alt="Box list" width="49%">
+  <img src="images/toggle_mk4.png" alt="Extra box switched on" width="49%">
+</p>
 
-- Tap any port on the box. It flashes yellow, and the connected motor or servo moves
-  back and forth.
+Tap the box button in the title bar (it shows the current box) and pick your box. Next to it
+you find the switches for extra boxes: **Slave Box** for the RC Box Mini, **+ MK 6.0** and
+**+ MK 4.0** for the Mould King 6.0, and a **– 1x +** counter for the Mould King 4.0.
+Everything is saved for the current model.
+
+### 3. Find a port
+
+<p>
+  <img src="images/test_rcbox2.png" alt="Port test on an RC Box Mini with slave" width="32%">
+  <img src="images/test_mk6.png" alt="Port test on a Mould King 6.0" width="32%">
+  <img src="images/test_mk4.png" alt="Port test on a Mould King 4.0" width="32%">
+</p>
+
+- Tap any port. It flashes yellow and the connected motor or servo moves back and forth.
+  On Mould King boxes the two studs next to a port belong to it.
 - Tap the same port again to stop the test early.
-- The bar at the bottom shows the port name, its channel and its current assignment.
-- Use the **Slave Box** switch in the title bar to show the second box (CH9–16).
-- Use the **EN / DE** button to switch the language.
-- Tap the red **X** in the top right corner to close the tool. The PL18 has no RTN key,
-  so this button is on every screen.
+- The bar at the bottom shows the box, the port, its channel and its current assignment.
+- RC Box Mini shows the channel number at each port. Mould King boxes show the port letter
+  printed on the box; the channels are shown above each box.
+- **EN / DE** switches the language. The red **X** closes the tool on every screen.
 
-### 3. Assign a function
+### 4. Assign a function
 
-![Mixer builder](images/builder.png)
+![Mixer builder](images/builder_mk6.png)
 
-Select a port and tap **Assign** to open the builder:
+Select a port and tap **Assign**:
 
-1. **Pick a category** at the top: Sticks, Pots, Switches, Log.Sw, Channels or Other.
-2. **Pick a source.** The small bar on each button shows its live value. You can also tap
-   **Detect** and move the control you want to use.
-3. **Set the options:**
-   - **– / +** changes the weight in 10 % steps.
-   - **Inverted** reverses the direction.
-   - **Replace** deletes the existing mixes on the channel first. Tap it to switch to
-     **Add**, which keeps the existing mixes and adds the new one.
-   - **Name** cycles through common channel names (Drive, Steer, Light, Crane …).
-4. **Test** wiggles the channel again so you can check that it is the right port.
-5. **Apply** writes the mix to the current model.
+1. **Pick a category:** Sticks, Pots, Switches, Log.Sw, Channels or Other.
+2. **Pick a source.** The small bar on each button shows its live value. Or tap **Detect**
+   and move the control you want to use.
+3. **Options:** **– / +** changes the weight in 10 % steps, **Inverted** reverses the
+   direction, **Replace** / **Add** decides whether existing mixes are deleted first,
+   **Name** cycles through common channel names.
+4. **Test** wiggles the channel again, **Apply** writes the mix to the current model.
 
-**Clear** removes all mixes from the channel. Tap it a second time to confirm.
+**Clear** removes all mixes from the channel (tap twice to confirm).
 
-![After assigning](images/main_slave_assigned.png)
+![After assigning](images/assigned_mk6.png)
 
-Back on the main screen, the bottom bar shows the new assignment.
-
-> **Note:** The builder changes the mixes of the model that is currently selected.
-> Mixes created by the tool are named `PF`, so you can find them later in the mixer menu.
+> The builder changes the mixes of the model that is currently selected. Mixes created by the
+> tool are named `PF`.
 
 ## Settings
 
-The values at the top of `RCBoxPortFinder.lua` can be edited with any text editor:
+At the top of `PortFinder.lua`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `amplitude` | `30` | Test movement in percent |
 | `cycles` | `3` | Number of back-and-forth movements |
-| `halfPeriod` | `25` | Time per direction in 10 ms steps (25 = 250 ms) |
-| `layout` | `"rcboxmini"` | Box layout (prepared for more boxes in the future) |
+| `halfPeriod` | `25` | Time per direction in 10 ms steps |
 
-The channel names for the builder can be changed in the `NAMES` table.
+## Adding a box (layout files)
+
+Every box is one file in `/SCRIPTS/PortFinder/layouts/`. PortFinder loads all files in this
+folder and lists their setups. To add a box, copy one of the existing files and change it.
+A layout file returns a table:
+
+| Field | Description |
+|-------|-------------|
+| `id`, `name`, `short` | Unique id, full name, short name for titles |
+| `author`, `version` | Shown in the setup list |
+| `x0`, `y0`, `w`, `h` | Area of the box in layout units (pixels of a top-view photo work well) |
+| `channels` | Channels one box uses |
+| `numbers` | `"channel"` shows channel numbers at the ports, `"label"` shows `port.label` |
+| `numColor` | Colour of the port numbers (optional) |
+| `ports` | List of ports: `name`, `label`, `kind`, `ch` (1…channels), `hit = {x1, y1, x2, y2}`, `num = {x, y}`, `align`, `dx`, `dy` |
+| `draw(g)` | Draws the box |
+| `drawPort(g, port, active)` | Draws one port (optional) |
+| `order` | Position in the box list |
+| `extras` | Extra boxes for the title bar: `{ label, device = "layout id", max }`. `max` 1 = switch, more = counter |
+| `titles` | Names of the boxes when several of the same box are used, e.g. `{"Master", "Slave"}` (optional) |
+| `selectable` | `false` hides the box from the list, e.g. a box that is only used as an extra (optional) |
+
+The `g` table passed to `draw` has helpers that work in layout units and scale automatically:
+`g.R` (filled rectangle), `g.frame`, `g.line`, `g.raised`, `g.pin`, `g.circle`, `g.ring`,
+`g.chamfer`, `g.text`, plus `g.PX` / `g.PY` to convert to screen pixels.
+
+At most 4 boxes are shown at once. An extra box only appears when its layout is installed.
 
 ## Screenshots
 
-The screenshots were rendered with a simulator. Fonts on the real transmitter may look
-slightly different.
+The screenshots were rendered with a simulator running the PortFinder code. Fonts on the real
+transmitter may look slightly different.
 
 ## Changelog
 
-- **v1.3**: Renamed to *RC Box PortFinder*. The top view is now redrawn from a photo of the
-  real RC Box Mini. Ports 3 and 4 are in the correct positions. Added English and German,
-  a version display and the layout system. Removed the "assigned" marker.
+- **v2.0**: Renamed to *PortFinder*. Layouts are separate files. New layouts for Mould King 6.0
+  and Mould King 4.0. Box list and switches for extra boxes in the title bar (up to 4 boxes),
+  saved per model.
+- **v1.3**: *RC Box PortFinder*: top view redrawn from a photo of the RC Box Mini, English and
+  German, version display.
+
+## Credits
+
+PortFinder is made by **MisterCreators Custom MOCs** ([mistercreator.de](https://mistercreator.de)).
+Layout files by other authors show their name in the setup list.
