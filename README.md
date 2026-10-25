@@ -1,3 +1,5 @@
+![RC Box PortFinder](images/banner.png)
+
 # RC Box PortFinder
 
 **Version 1.3** · EdgeTX Lua tool for the **RC Box Mini** · made for the Flysky Paladin PL18 (EdgeTX)
