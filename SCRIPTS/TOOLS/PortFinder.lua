@@ -1,4 +1,4 @@
--- PortFinder v2.0 for EdgeTX
+-- PortFinder v2.1 for EdgeTX
 -- by MisterCreators Custom MOCs (mistercreator.de)
 --
 -- Shows your RC box on the touchscreen. Tap a port and its channel wiggles,
@@ -11,10 +11,13 @@
 --
 -- Adding your own box: copy a layout file, change it, put it in the layouts
 -- folder. See README.md for the layout format.
+--
+-- BuWizz: the setup "BuWizz (Bridge)" reads the BuWizz of the model, their
+-- names and channels live from the MC BuWizz Bridge (see BuWizz Connect).
 local toolName = "TNS|PortFinder|TNE"
 
 local APP_NAME = "PortFinder"
-local VERSION  = "v2.0"
+local VERSION  = "v2.1"
 local CREDIT   = "by MisterCreators Custom MOCs"
 
 ---------------------------------------------------------------------
@@ -26,8 +29,11 @@ local CFG = {
   halfPeriod = 25,    -- time per direction in 10 ms
   dir        = "/SCRIPTS/PortFinder",
   -- used when the radio can't list folders
-  knownLayouts = { "rcboxmini", "mk60", "mk40" },
+  knownLayouts = { "rcboxmini", "mk60", "mk40", "buwizz3", "buwizz2" },
 }
+
+-- MC BuWizz Bridge protocol (same as BuWizz Connect)
+local BW_FRAME, BW_MODULE, BW_RADIO = 0x8C, 0xEE, 0xEA
 local CFG_FILE = CFG.dir .. "/PortFinder.cfg"
 local LAYOUT_DIR = CFG.dir .. "/layouts"
 
@@ -65,6 +71,13 @@ local TXT = {
     setupTitle = "Box für dieses Modell", ports = "Ports", language = "Sprache: Deutsch",
     by = "von ", noLayouts = "Keine Layouts gefunden in",
     saved = "Setup gespeichert für ",
+    auto = "automatisch", bwAuto = "BuWizz (Bridge)",
+    bwNoRf1 = "Internes HF ist in diesem Modell nicht aktiv.",
+    bwNoRf2 = "Modell > Internes HF > CRSF einschalten.",
+    bwNoBridge1 = "Keine Antwort von der MC BuWizz Bridge.",
+    bwNoBridge2 = "Ist die Bridge angeschlossen und eingeschaltet?",
+    bwEmpty1 = "Diesem Modell ist kein BuWizz zugeordnet.",
+    bwEmpty2 = "BuWizz mit dem Tool BuWizz Connect hinzufügen.",
   },
   en = {
     warnTitle = "WARNING",
@@ -88,6 +101,13 @@ local TXT = {
     setupTitle = "Box for this model", ports = "ports", language = "Language: English",
     by = "by ", noLayouts = "No layouts found in",
     saved = "Setup saved for ",
+    auto = "automatic", bwAuto = "BuWizz (Bridge)",
+    bwNoRf1 = "The internal RF module is off in this model.",
+    bwNoRf2 = "Model > Internal RF > CRSF.",
+    bwNoBridge1 = "No answer from the MC BuWizz Bridge.",
+    bwNoBridge2 = "Is the bridge connected and powered?",
+    bwEmpty1 = "No BuWizz is assigned to this model.",
+    bwEmpty2 = "Add BuWizz with the BuWizz Connect tool.",
   },
 }
 
@@ -238,10 +258,107 @@ local function loadLayouts()
       setups[#setups + 1] = L
     end
   end
+  -- BuWizz (Bridge): BuWizz, names and channels come live from the MC BuWizz Bridge
+  if layouts.buwizz3 and layouts.buwizz2 then
+    setups[#setups + 1] = {
+      id = "bwauto", name = "BuWizz (Bridge)", short = "BuWizz", author = "MisterCreators Custom MOCs",
+      dynamic = true, extras = {}, order = 35, channels = 16,
+    }
+  end
   table.sort(setups, function(a, b)
     if (a.order or 999) ~= (b.order or 999) then return (a.order or 999) < (b.order or 999) end
     return a.name < b.name
   end)
+end
+
+---------------------------------------------------------------------
+-- BuWizz (Bridge): read the BuWizz of the model from the MC BuWizz Bridge
+---------------------------------------------------------------------
+local bw = { ok = false, lastRx = 0, ver = -1, slots = {}, names = {}, q = {}, lastStatus = 0, sig = "" }
+
+local function bwSend(cmd, a)
+  local d = { BW_MODULE, BW_RADIO, cmd }
+  if a then for i = 1, #a do d[#d + 1] = a[i] end end
+  bw.q[#bw.q + 1] = d
+end
+
+local function bwString(d, from)
+  local t = {}
+  for i = from, #d do
+    if d[i] == 0 then break end
+    t[#t + 1] = string.char(d[i])
+  end
+  return table.concat(t)
+end
+
+local function bwComm()
+  if not crossfireTelemetryPop then return end
+  for _ = 1, 20 do
+    local cmd, d = crossfireTelemetryPop()
+    if cmd == nil then break end
+    if cmd == BW_FRAME and d and d[1] == BW_RADIO and d[2] == BW_MODULE then
+      local c = d[3] - 0x80
+      bw.ok = true
+      bw.lastRx = getTime()
+      if c == 0x01 then
+        local ver = (d[8] or 0) + (d[9] or 0) * 256
+        local slots = {}
+        for i = 1, (d[10] or 0) do
+          local o = 10 + (i - 1) * 10
+          slots[i] = { lib = d[o + 1], model = d[o + 3],
+                       first = (d[o + 9] or 0) + 1, count = d[o + 10] or 0 }
+        end
+        bw.slots = slots
+        if ver ~= bw.ver then
+          bw.ver = ver
+          for i = 1, #slots do bwSend(0x02, { slots[i].lib }) end
+        end
+      elseif c == 0x02 then
+        bw.names[d[4]] = bwString(d, 17)
+      end
+    end
+  end
+  local t = getTime()
+  if bw.ok and t - bw.lastRx > 300 then
+    bw.ok = false
+    bw.slots = {}
+  end
+  if t - bw.lastStatus > 100 and #bw.q < 4 then
+    bwSend(0x01)
+    bw.lastStatus = t
+  end
+  if #bw.q > 0 then
+    local avail = crossfireTelemetryPush()
+    if avail then
+      crossfireTelemetryPush(BW_FRAME, table.remove(bw.q, 1))
+    elseif avail == nil then
+      bw.q = {}
+    end
+  end
+end
+
+-- a fingerprint of the BuWizz list, to rebuild the view only when it changes
+local function bwSignature()
+  local parts = {}
+  for i, s in ipairs(bw.slots) do
+    parts[i] = s.lib .. ":" .. s.model .. ":" .. s.first .. ":" .. s.count .. ":" .. (bw.names[s.lib] or "")
+  end
+  return table.concat(parts, ",")
+end
+
+local function buildBuWizzDevs()
+  for i, s in ipairs(bw.slots) do
+    if #devs >= 4 then break end
+    local D = (s.model == 2) and layouts.buwizz2 or layouts.buwizz3
+    local di = #devs + 1
+    devs[di] = { L = D, start = s.first, title = bw.names[s.lib] or ("BuWizz " .. i) }
+    for _, p in ipairs(D.ports) do
+      if p.ch <= s.count then
+        ports[#ports + 1] = { dev = di, lp = p, ch = s.first + p.ch - 1 }
+      end
+    end
+  end
+  bw.sig = bwSignature()
 end
 
 -- the setup is the chosen box plus the extra boxes switched on in the title bar
@@ -258,6 +375,10 @@ local function applySetup(L, counts)
   ports, devs, sel, lastPort = {}, {}, nil, nil
   if not L then return end
   extraN = {}
+  if L.dynamic then
+    buildBuWizzDevs()
+    return
+  end
   local list = { L.id }
   for i, e in ipairs(L.extras) do
     local n = math.max(0, math.min(e.max or 1, (counts and counts[i]) or 0))
@@ -645,7 +766,10 @@ local function drawDevice(di, x0, y0, bw)
   local L = d.L
   local g = makeG(L, x0, y0, bw)
   local pulse = (math.floor(getTime() / 15) % 2 == 0)
-  local last = d.start + L.channels - 1
+  local last = d.start - 1
+  for _, p in ipairs(ports) do
+    if p.dev == di and p.ch > last then last = p.ch end
+  end
 
   text(x0 + bw / 2, y0 - 16, string.upper(d.title) .. "  (CH" .. d.start .. "-" .. last .. ")",
     CENTER + SMLSIZE + C.text)
@@ -686,6 +810,16 @@ end
 -- 1 device big, 2 side by side, 3-4 in a 2 x 2 grid
 local function drawDevices(top, bottom)
   local n = #devs
+  if n == 0 and setup and setup.dynamic then
+    local k1, k2 = "bwEmpty1", "bwEmpty2"
+    if not bw.ok then
+      if crossfireTelemetryPush and crossfireTelemetryPush() == nil then k1, k2 = "bwNoRf1", "bwNoRf2"
+      else k1, k2 = "bwNoBridge1", "bwNoBridge2" end
+    end
+    text(W / 2, top + 60, T(k1), CENTER + C.white)
+    text(W / 2, top + 86, T(k2), CENTER + SMLSIZE + C.text)
+    return
+  end
   if n == 0 then
     text(W / 2, top + 40, T("noLayouts"), CENTER + C.white)
     text(W / 2, top + 64, LAYOUT_DIR, CENTER + C.text)
@@ -835,9 +969,9 @@ local function drawSetup()
       local on = (s == setup)
       rect(6, y, W - 12, rh - 4, on and C.on or C.btn)
       local fg = on and C.black or C.white
-      text(16, y + 3, s.name, fg)
+      text(16, y + 3, s.dynamic and T("bwAuto") or s.name, fg)
       text(16, y + 22, T("by") .. (s.author or "?"), SMLSIZE + (on and C.black or C.text))
-      text(W - 18, y + 12, s.channels .. " " .. T("ports"), RIGHT + SMLSIZE + fg)
+      text(W - 18, y + 12, s.dynamic and T("auto") or (s.channels .. " " .. T("ports")), RIGHT + SMLSIZE + fg)
       addBtn(6, y, W - 12, rh - 4, function()
         if s ~= setup then applySetup(s, {}) end
         saveSetup()
@@ -1035,6 +1169,10 @@ local function run(event, touchState)
     return 1
   end
 
+  if setup and setup.dynamic then
+    bwComm()
+    if screen == "main" and not active and bwSignature() ~= bw.sig then applySetup(setup) end
+  end
   updateTest()
   if screen == "build" then updateDetect() end
 

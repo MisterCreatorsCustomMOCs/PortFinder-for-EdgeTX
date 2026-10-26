@@ -2,7 +2,7 @@
 
 # PortFinder
 
-**Version 2.0** · EdgeTX Lua tool · made by **MisterCreators Custom MOCs** ([mistercreator.de](https://mistercreator.de))
+**Version 2.1** · EdgeTX Lua tool · made by **MisterCreators Custom MOCs** ([mistercreator.de](https://mistercreator.de))
 
 PortFinder shows a top view of your RC box on the transmitter's touchscreen. Tap a port and
 the matching channel wiggles back and forth a few times, so you can see right away which motor
@@ -24,6 +24,9 @@ the choice **for each model**.
 | RC Box Mini | 8 (4 PF, 4 servo) | **Slave Box** switch | 1 or 2 boxes, CH1–16 |
 | Mould King 6.0 | 6 PF (A–F) | **+ MK 6.0** and **+ MK 4.0** switches | MK6, 2x MK6, MK6 + MK4, 2x MK6 + MK4 |
 | Mould King 4.0 | 4 PF (A–D) | **– 1x +** counter | 1 to 4 boxes |
+| BuWizz (Bridge) | automatic | – (read from the bridge) | up to 4 BuWizz 2.0 / 3.0, as set in BuWizz Connect |
+| BuWizz 3.0 | 6 (4 PU, 2 PF) | **+ 3.0** and **+ 2.0** switches | 3.0, 2x 3.0, 3.0 + 2.0, 2x 3.0 + 2.0 |
+| BuWizz 2.0 | 4 PF | **– 1x +** counter | 1 to 4 BuWizz |
 
 The boxes use the channels one after the other: with 2x MK 6.0 + MK 4.0 the first MK 6.0 is on
 CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
@@ -36,6 +39,35 @@ CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
 <p>
   <img src="images/main_mk6x2mk4.png" alt="2x MK 6.0 + MK 4.0" width="49%">
   <img src="images/main_mk4x4.png" alt="4x MK 4.0" width="49%">
+</p>
+
+### BuWizz
+
+BuWizz are controlled through the **MC BuWizz Bridge**, an ESP32 that works as the internal
+CRSF module of the radio and connects to the BuWizz over Bluetooth. The BuWizz of each model are
+paired, named and ordered with the **BuWizz Connect** tool.
+
+- **BuWizz (Bridge)** reads the BuWizz of the current model from the bridge: their names, their
+  type and their channels. You don't need to set up anything in PortFinder. If you change the
+  BuWizz in BuWizz Connect, PortFinder follows right away.
+- **BuWizz 3.0** and **BuWizz 2.0** are fixed setups for use without the bridge, or to plan a
+  model. They use the channels one after the other, just like the bridge does.
+
+| Port | BuWizz 3.0 | BuWizz 2.0 | Position (top view) |
+|------|------------|------------|---------------------|
+| 1 | Powered Up | Power Functions | top left |
+| 2 | Powered Up | Power Functions | bottom left |
+| 3 | Powered Up | Power Functions | bottom right |
+| 4 | Powered Up | Power Functions | top right |
+| 5 | Power Functions | – | center left |
+| 6 | Power Functions | – | center right |
+
+The BuWizz 3.0 is shown lying on its side, so the four motor ports are in the same corners as on
+the RC Box Mini and the BuWizz 2.0.
+
+<p>
+  <img src="images/main_buwizz_bridge.png" alt="BuWizz (Bridge) with 2x BuWizz 3.0 + BuWizz 2.0" width="49%">
+  <img src="images/main_buwizz2x4.png" alt="4x BuWizz 2.0" width="49%">
 </p>
 
 ## Features
@@ -54,6 +86,7 @@ CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
 - A transmitter running **EdgeTX** with a colour touchscreen. Developed on a Flysky Paladin
   PL18 (480 × 320).
 - The RC box(es) of your setup connected to your receiver or multiprotocol module.
+- For **BuWizz (Bridge)**: the MC BuWizz Bridge with **Model → Internal RF → CRSF** switched on.
 
 ## Installation
 
@@ -65,6 +98,8 @@ CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
    /SCRIPTS/PortFinder/layouts/rcboxmini.lua
    /SCRIPTS/PortFinder/layouts/mk60.lua
    /SCRIPTS/PortFinder/layouts/mk40.lua
+   /SCRIPTS/PortFinder/layouts/buwizz3.lua
+   /SCRIPTS/PortFinder/layouts/buwizz2.lua
    ```
 4. **Updating from v1.x:** delete `/SCRIPTS/TOOLS/RCBoxPortFinder.lua` (and `PortFinder.lua`
    from v1.0), otherwise the old tool stays in the menu.
@@ -177,6 +212,8 @@ transmitter may look slightly different.
 
 ## Changelog
 
+- **v2.1**: BuWizz 2.0 and BuWizz 3.0 layouts. New setup **BuWizz (Bridge)**: the BuWizz of the
+  model, their names and channels are read live from the MC BuWizz Bridge.
 - **v2.0**: Renamed to *PortFinder*. Layouts are separate files. New layouts for Mould King 6.0
   and Mould King 4.0. Box list and switches for extra boxes in the title bar (up to 4 boxes),
   saved per model.
