@@ -2,7 +2,7 @@
 
 # PortFinder
 
-**Version 2.1** · EdgeTX Lua tool · made by **MisterCreators Custom MOCs** ([mistercreator.de](https://mistercreator.de))
+**Version 2.3** · EdgeTX Lua tool · made by **MisterCreators Custom MOCs** ([mistercreator.de](https://mistercreator.de))
 
 PortFinder shows a top view of your RC box on the transmitter's touchscreen. Tap a port and
 the matching channel wiggles back and forth a few times, so you can see right away which motor
@@ -24,9 +24,14 @@ the choice **for each model**.
 | RC Box Mini | 8 (4 PF, 4 servo) | **Slave Box** switch | 1 or 2 boxes, CH1–16 |
 | Mould King 6.0 | 6 PF (A–F) | **+ MK 6.0** and **+ MK 4.0** switches | MK6, 2x MK6, MK6 + MK4, 2x MK6 + MK4 |
 | Mould King 4.0 | 4 PF (A–D) | **– 1x +** counter | 1 to 4 boxes |
-| BuWizz (Bridge) | automatic | – (read from the bridge) | up to 4 BuWizz 2.0 / 3.0, as set in BuWizz Connect |
+| Brick Bridge | automatic | – (read from the bridge) | up to 8 devices (BuWizz, SBrick, LEGO hubs), as set in Brick Connect |
 | BuWizz 3.0 | 6 (4 PU, 2 PF) | **+ 3.0** and **+ 2.0** switches | 3.0, 2x 3.0, 3.0 + 2.0, 2x 3.0 + 2.0 |
 | BuWizz 2.0 | 4 PF | **– 1x +** counter | 1 to 4 BuWizz |
+| SBrick / SBrick Plus | 4 PF (A–D) | **– 1x +** counter | 1 to 4 SBrick |
+| LEGO Technic Hub | 4 PU (A–D) | **– 1x +** counter | 1 to 4 hubs |
+| LEGO City Hub | 2 PU (A, B) | **– 1x +** counter | 1 to 4 hubs (8 with the bridge) |
+| LEGO BOOST Move Hub | 2 built-in motors (A, B), 2 PU (C, D) | **– 1x +** counter | 1 to 4 hubs |
+| LEGO DUPLO train | motor, light, sound | **– 1x +** counter | 1 to 4 trains |
 
 The boxes use the channels one after the other: with 2x MK 6.0 + MK 4.0 the first MK 6.0 is on
 CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
@@ -41,17 +46,24 @@ CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
   <img src="images/main_mk4x4.png" alt="4x MK 4.0" width="49%">
 </p>
 
-### BuWizz
+### Brick Bridge (BuWizz, SBrick, LEGO hubs)
 
-BuWizz are controlled through the **MC BuWizz Bridge**, an ESP32 that works as the internal
-CRSF module of the radio and connects to the BuWizz over Bluetooth. The BuWizz of each model are
-paired, named and ordered with the **BuWizz Connect** tool.
+BuWizz, SBrick and LEGO Powered Up hubs are controlled through the **MC Brick Bridge**, an ESP32
+that works as the internal CRSF module of the radio and connects to the devices over Bluetooth.
+The devices of each model are paired, named and ordered with the **Brick Connect** tool.
 
-- **BuWizz (Bridge)** reads the BuWizz of the current model from the bridge: their names, their
-  type and their channels. You don't need to set up anything in PortFinder. If you change the
-  BuWizz in BuWizz Connect, PortFinder follows right away.
-- **BuWizz 3.0** and **BuWizz 2.0** are fixed setups for use without the bridge, or to plan a
-  model. They use the channels one after the other, just like the bridge does.
+- **Brick Bridge** reads the devices of the current model from the bridge: their names, their
+  type and their channels, and shows each one with its own layout. You don't need to set up
+  anything in PortFinder. If you change the devices in Brick Connect, PortFinder follows right
+  away. With more than 4 devices, **<** and **>** in the title bar switch between the pages.
+- The fixed setups (**BuWizz 3.0**, **SBrick**, **LEGO Technic Hub** ...) are for use without
+  the bridge, or to plan a model. They use the channels one after the other, just like the
+  bridge does.
+
+<p>
+  <img src="images/main_brick_bridge.png" alt="Brick Bridge with Technic Hub, SBrick Plus and BuWizz 3.0" width="49%">
+  <img src="images/main_lego_hubs.png" alt="Technic Hub, BOOST Move Hub, City Hub and DUPLO train" width="49%">
+</p>
 
 | Port | BuWizz 3.0 | BuWizz 2.0 | Position (top view) |
 |------|------------|------------|---------------------|
@@ -65,8 +77,19 @@ paired, named and ordered with the **BuWizz Connect** tool.
 The BuWizz 3.0 is shown lying on its side, so the four motor ports are in the same corners as on
 the RC Box Mini and the BuWizz 2.0.
 
+| Device | Ports and channels | Position (top view) |
+|--------|--------------------|---------------------|
+| SBrick / SBrick Plus | A, B, C, D | A top left, B top right, C bottom left, D bottom right |
+| LEGO Technic Hub | A, B, C, D | A, B on the left end, C, D on the right end |
+| LEGO City Hub | A, B | both on the left end (hub lying on its side) |
+| LEGO BOOST Move Hub | A, B built-in motors, C, D | A left, B right, C and D on the rear end |
+| LEGO DUPLO train | 1 motor, 2 light, 3 sound | wheels, front light, chimney |
+
+> The port positions of the SBrick and the LEGO hubs are listed at the top of each layout file,
+> so they are easy to adjust.
+
 <p>
-  <img src="images/main_buwizz_bridge.png" alt="BuWizz (Bridge) with 2x BuWizz 3.0 + BuWizz 2.0" width="49%">
+  <img src="images/main_8_cityhubs.png" alt="Page 2 of 8 City Hubs" width="49%">
   <img src="images/main_buwizz2x4.png" alt="4x BuWizz 2.0" width="49%">
 </p>
 
@@ -86,7 +109,7 @@ the RC Box Mini and the BuWizz 2.0.
 - A transmitter running **EdgeTX** with a colour touchscreen. Developed on a Flysky Paladin
   PL18 (480 × 320).
 - The RC box(es) of your setup connected to your receiver or multiprotocol module.
-- For **BuWizz (Bridge)**: the MC BuWizz Bridge with **Model → Internal RF → CRSF** switched on.
+- For **Brick Bridge**: the MC Brick Bridge 2.0 with **Model → Internal RF → CRSF** switched on.
 
 ## Installation
 
@@ -100,6 +123,11 @@ the RC Box Mini and the BuWizz 2.0.
    /SCRIPTS/PortFinder/layouts/mk40.lua
    /SCRIPTS/PortFinder/layouts/buwizz3.lua
    /SCRIPTS/PortFinder/layouts/buwizz2.lua
+   /SCRIPTS/PortFinder/layouts/sbrick.lua
+   /SCRIPTS/PortFinder/layouts/technichub.lua
+   /SCRIPTS/PortFinder/layouts/cityhub.lua
+   /SCRIPTS/PortFinder/layouts/movehub.lua
+   /SCRIPTS/PortFinder/layouts/duplotrain.lua
    ```
 4. **Updating from v1.x:** delete `/SCRIPTS/TOOLS/RCBoxPortFinder.lua` (and `PortFinder.lua`
    from v1.0), otherwise the old tool stays in the menu.
@@ -116,6 +144,10 @@ The tool saves its settings (language and the boxes of each model) in
 
 **Remove propellers, lift wheels off the ground and secure all moving parts.** During a test
 the channel moves even when an ESC or a drive motor is connected. Tap **Understood – Start**.
+
+**Choose box** next to it opens the box list right away. If PortFinder got stuck the last time
+it showed the boxes of a model, it opens the box list by itself on the next start, so you can
+always switch to another setup.
 
 ### 2. Choose your boxes
 
@@ -203,7 +235,9 @@ The `g` table passed to `draw` has helpers that work in layout units and scale a
 `g.R` (filled rectangle), `g.frame`, `g.line`, `g.raised`, `g.pin`, `g.circle`, `g.ring`,
 `g.chamfer`, `g.text`, plus `g.PX` / `g.PY` to convert to screen pixels.
 
-At most 4 boxes are shown at once. An extra box only appears when its layout is installed.
+Fixed setups show at most 4 boxes. The Brick Bridge setup shows up to 8 devices, 4 per page.
+An extra box only appears when its layout is installed. A bridge device whose layout is missing
+is shown as a simple row of ports.
 
 ## Screenshots
 
@@ -212,6 +246,13 @@ transmitter may look slightly different.
 
 ## Changelog
 
+- **v2.3**: Fixed: 4x BuWizz 2.0 (and other big setups) made the tool hang on the radio. Boxes
+  are now prepared once and then only redrawn, which needs about 80 % less computing time.
+  **Choose box** button on the safety screen, and the box list opens by itself after a start
+  that got stuck. SBrick layout redrawn from a photo.
+- **v2.2**: Layouts for SBrick / SBrick Plus, LEGO Technic Hub, City Hub, BOOST Move Hub and
+  DUPLO train. The setup **BuWizz (Bridge)** is now **Brick Bridge** and shows up to 8 devices
+  of the MC Brick Bridge 2.0 (BuWizz, SBrick, LEGO hubs) on two pages.
 - **v2.1**: BuWizz 2.0 and BuWizz 3.0 layouts. New setup **BuWizz (Bridge)**: the BuWizz of the
   model, their names and channels are read live from the MC BuWizz Bridge.
 - **v2.0**: Renamed to *PortFinder*. Layouts are separate files. New layouts for Mould King 6.0

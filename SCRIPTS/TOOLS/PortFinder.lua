@@ -1,4 +1,4 @@
--- PortFinder v2.1 for EdgeTX
+-- PortFinder v2.3 for EdgeTX
 -- by MisterCreators Custom MOCs (mistercreator.de)
 --
 -- Shows your RC box on the touchscreen. Tap a port and its channel wiggles,
@@ -12,12 +12,13 @@
 -- Adding your own box: copy a layout file, change it, put it in the layouts
 -- folder. See README.md for the layout format.
 --
--- BuWizz: the setup "BuWizz (Bridge)" reads the BuWizz of the model, their
--- names and channels live from the MC BuWizz Bridge (see BuWizz Connect).
+-- Brick Bridge: the setup "Brick Bridge" reads the devices of the model
+-- (BuWizz, SBrick, LEGO hubs), their names and channels live from the
+-- MC Brick Bridge (see Brick Connect). Up to 8 devices, 4 per page.
 local toolName = "TNS|PortFinder|TNE"
 
 local APP_NAME = "PortFinder"
-local VERSION  = "v2.1"
+local VERSION  = "v2.3"
 local CREDIT   = "by MisterCreators Custom MOCs"
 
 ---------------------------------------------------------------------
@@ -29,12 +30,22 @@ local CFG = {
   halfPeriod = 25,    -- time per direction in 10 ms
   dir        = "/SCRIPTS/PortFinder",
   -- used when the radio can't list folders
-  knownLayouts = { "rcboxmini", "mk60", "mk40", "buwizz3", "buwizz2" },
+  knownLayouts = { "rcboxmini", "mk60", "mk40", "buwizz3", "buwizz2", "sbrick",
+                   "technichub", "cityhub", "movehub", "duplotrain" },
 }
 
--- MC BuWizz Bridge protocol (same as BuWizz Connect)
+-- MC Brick Bridge protocol (same as Brick Connect)
 local BW_FRAME, BW_MODULE, BW_RADIO = 0x8C, 0xEE, 0xEA
+
+-- device type of the bridge -> layout
+local TYPE_LAYOUT = { [0] = "buwizz2", [2] = "buwizz2", [3] = "buwizz3", [10] = "sbrick", [11] = "sbrick",
+                      [20] = "technichub", [21] = "cityhub", [22] = "movehub", [23] = "duplotrain" }
+local TYPE_PORTS = { [0] = 4, [2] = 4, [3] = 6, [10] = 4, [11] = 4, [20] = 4, [21] = 2, [22] = 4, [23] = 3 }
+local DEV_PAGE = 4          -- devices per page
 local CFG_FILE = CFG.dir .. "/PortFinder.cfg"
+-- written while the device view starts: if the tool dies there (too much for the radio),
+-- the next start opens the box list instead of the stuck setup
+local GUARD_FILE = CFG.dir .. "/guard.txt"
 local LAYOUT_DIR = CFG.dir .. "/layouts"
 
 -- Channel names to cycle through (max. 6 characters)
@@ -71,13 +82,15 @@ local TXT = {
     setupTitle = "Box für dieses Modell", ports = "Ports", language = "Sprache: Deutsch",
     by = "von ", noLayouts = "Keine Layouts gefunden in",
     saved = "Setup gespeichert für ",
-    auto = "automatisch", bwAuto = "BuWizz (Bridge)",
+    chooseBox = "Box wählen",
+    guard = "Letzter Start hing - bitte Box prüfen",
+    auto = "automatisch", bwAuto = "Brick Bridge (BuWizz, SBrick, LEGO)",
     bwNoRf1 = "Internes HF ist in diesem Modell nicht aktiv.",
     bwNoRf2 = "Modell > Internes HF > CRSF einschalten.",
-    bwNoBridge1 = "Keine Antwort von der MC BuWizz Bridge.",
-    bwNoBridge2 = "Ist die Bridge angeschlossen und eingeschaltet?",
-    bwEmpty1 = "Diesem Modell ist kein BuWizz zugeordnet.",
-    bwEmpty2 = "BuWizz mit dem Tool BuWizz Connect hinzufügen.",
+    bwNoBridge1 = "Keine Antwort von der MC Brick Bridge.",
+    bwNoBridge2 = "Ist die Bridge angeschlossen und hat Firmware 2.0?",
+    bwEmpty1 = "Diesem Modell ist kein Gerät zugeordnet.",
+    bwEmpty2 = "Geräte mit dem Tool Brick Connect hinzufügen.",
   },
   en = {
     warnTitle = "WARNING",
@@ -101,13 +114,15 @@ local TXT = {
     setupTitle = "Box for this model", ports = "ports", language = "Language: English",
     by = "by ", noLayouts = "No layouts found in",
     saved = "Setup saved for ",
-    auto = "automatic", bwAuto = "BuWizz (Bridge)",
+    chooseBox = "Choose box",
+    guard = "Last start got stuck - please check the box",
+    auto = "automatic", bwAuto = "Brick Bridge (BuWizz, SBrick, LEGO)",
     bwNoRf1 = "The internal RF module is off in this model.",
     bwNoRf2 = "Model > Internal RF > CRSF.",
-    bwNoBridge1 = "No answer from the MC BuWizz Bridge.",
-    bwNoBridge2 = "Is the bridge connected and powered?",
-    bwEmpty1 = "No BuWizz is assigned to this model.",
-    bwEmpty2 = "Add BuWizz with the BuWizz Connect tool.",
+    bwNoBridge1 = "No answer from the MC Brick Bridge.",
+    bwNoBridge2 = "Is the bridge connected and on firmware 2.0?",
+    bwEmpty1 = "No device is assigned to this model.",
+    bwEmpty2 = "Add devices with the Brick Connect tool.",
   },
 }
 
@@ -139,6 +154,8 @@ local buttons = {}
 local exitReq = false
 local toast, toastUntil = nil, 0
 local setupPage = 1
+local guardTripped = false  -- the last start got stuck in the device view
+local mainFrames = 0        -- frames of the device view since start / setup change
 
 local CATS = {}
 local srcName = {}
@@ -258,13 +275,12 @@ local function loadLayouts()
       setups[#setups + 1] = L
     end
   end
-  -- BuWizz (Bridge): BuWizz, names and channels come live from the MC BuWizz Bridge
-  if layouts.buwizz3 and layouts.buwizz2 then
-    setups[#setups + 1] = {
-      id = "bwauto", name = "BuWizz (Bridge)", short = "BuWizz", author = "MisterCreators Custom MOCs",
-      dynamic = true, extras = {}, order = 35, channels = 16,
-    }
-  end
+  -- Brick Bridge: devices, names and channels come live from the MC Brick Bridge
+  -- (the id stays "bwauto", so models set up with PortFinder 2.1 keep their setup)
+  setups[#setups + 1] = {
+    id = "bwauto", name = "Brick Bridge", short = "Bridge", author = "MisterCreators Custom MOCs",
+    dynamic = true, extras = {}, order = 35, channels = 16,
+  }
   table.sort(setups, function(a, b)
     if (a.order or 999) ~= (b.order or 999) then return (a.order or 999) < (b.order or 999) end
     return a.name < b.name
@@ -272,9 +288,11 @@ local function loadLayouts()
 end
 
 ---------------------------------------------------------------------
--- BuWizz (Bridge): read the BuWizz of the model from the MC BuWizz Bridge
+-- Brick Bridge: read the devices of the model from the MC Brick Bridge
 ---------------------------------------------------------------------
-local bw = { ok = false, lastRx = 0, ver = -1, slots = {}, names = {}, q = {}, lastStatus = 0, sig = "" }
+local bw = { ok = false, proto = false, lastRx = 0, ver = -1, nslots = 0, slots = {}, names = {}, asked = {}, q = {},
+             lastStatus = 0, lastInfo = 0, page = 0, sig = "" }
+local devPage = 0           -- page of the device view (more than 4 devices)
 
 local function bwSend(cmd, a)
   local d = { BW_MODULE, BW_RADIO, cmd }
@@ -300,31 +318,47 @@ local function bwComm()
       local c = d[3] - 0x80
       bw.ok = true
       bw.lastRx = getTime()
-      if c == 0x01 then
+      if c == 0x0F then
+        bw.proto = true
+      elseif bw.proto and c == 0x01 then
         local ver = (d[8] or 0) + (d[9] or 0) * 256
-        local slots = {}
-        for i = 1, (d[10] or 0) do
-          local o = 10 + (i - 1) * 10
-          slots[i] = { lib = d[o + 1], model = d[o + 3],
-                       first = (d[o + 9] or 0) + 1, count = d[o + 10] or 0 }
-        end
-        bw.slots = slots
+        bw.nslots = d[10] or 0
+        local first, n = d[11] or 0, d[12] or 0
         if ver ~= bw.ver then
           bw.ver = ver
-          for i = 1, #slots do bwSend(0x02, { slots[i].lib }) end
+          bw.asked = {}         -- names may have changed: ask again
         end
-      elseif c == 0x02 then
-        bw.names[d[4]] = bwString(d, 17)
+        for i = 1, n do
+          local o = 12 + (i - 1) * 11
+          local lib = d[o + 1]
+          bw.slots[first + i] = { lib = lib, type = d[o + 3],
+                                  first = (d[o + 9] or 0) + 1, count = d[o + 10] or 0 }
+          if not bw.asked[lib] then
+            bw.asked[lib] = true
+            bwSend(0x02, { lib })
+          end
+        end
+        for i = #bw.slots, bw.nslots + 1, -1 do bw.slots[i] = nil end
+      elseif bw.proto and c == 0x02 then
+        bw.names[d[4]] = bwString(d, 23)
       end
     end
   end
   local t = getTime()
   if bw.ok and t - bw.lastRx > 300 then
     bw.ok = false
+    bw.proto = false
     bw.slots = {}
+    bw.nslots = 0
   end
-  if t - bw.lastStatus > 100 and #bw.q < 4 then
-    bwSend(0x01)
+  if not bw.proto and t - bw.lastInfo > 100 then
+    bwSend(0x0F)
+    bw.lastInfo = t
+  end
+  if bw.proto and t - bw.lastStatus > 50 and #bw.q < 4 then
+    if bw.nslots <= DEV_PAGE then bw.page = 0 end
+    bwSend(0x01, { bw.page })
+    if bw.nslots > DEV_PAGE then bw.page = 1 - bw.page end
     bw.lastStatus = t
   end
   if #bw.q > 0 then
@@ -337,27 +371,54 @@ local function bwComm()
   end
 end
 
--- a fingerprint of the BuWizz list, to rebuild the view only when it changes
+-- a fingerprint of the device list, to rebuild the view only when it changes
 local function bwSignature()
   local parts = {}
-  for i, s in ipairs(bw.slots) do
-    parts[i] = s.lib .. ":" .. s.model .. ":" .. s.first .. ":" .. s.count .. ":" .. (bw.names[s.lib] or "")
+  for i = 1, bw.nslots do
+    local s = bw.slots[i]
+    if not s then return "incomplete" end
+    parts[i] = s.lib .. ":" .. s.type .. ":" .. s.first .. ":" .. s.count .. ":" .. (bw.names[s.lib] or "")
   end
   return table.concat(parts, ",")
 end
 
-local function buildBuWizzDevs()
-  for i, s in ipairs(bw.slots) do
-    if #devs >= 4 then break end
-    local D = (s.model == 2) and layouts.buwizz2 or layouts.buwizz3
-    local di = #devs + 1
-    devs[di] = { L = D, start = s.first, title = bw.names[s.lib] or ("BuWizz " .. i) }
-    for _, p in ipairs(D.ports) do
-      if p.ch <= s.count then
-        ports[#ports + 1] = { dev = di, lp = p, ch = s.first + p.ch - 1 }
+-- simple stand-in when the layout file of a device is not installed
+local generic = {}
+local function genericLayout(n)
+  if generic[n] then return generic[n] end
+  local gp = {}
+  for i = 1, n do
+    local x = 20 + (i - 1) * 150
+    gp[i] = { name = "Port " .. i, label = tostring(i), kind = "pf", ch = i, hit = { x, 40, x + 130, 200 },
+              num = { x + 65, 120 }, align = "center", dy = 7 }
+  end
+  generic[n] = {
+    id = "generic" .. n, name = "Device", short = "Device", x0 = 0, y0 = 0, w = 40 + n * 150, h = 240,
+    channels = n, numbers = "channel", ports = gp,
+    draw = function(g) g.R(0, 0, 40 + n * 150, 240, g.C.bar) end,
+    drawPort = function(g, p, active)
+      local h = p.hit
+      g.R(h[1], h[2], h[3], h[4], active and g.C.accent or g.C.btn)
+    end,
+  }
+  return generic[n]
+end
+
+local function buildBridgeDevs()
+  for i = 1, bw.nslots do
+    local s = bw.slots[i]
+    if s then
+      local D = layouts[TYPE_LAYOUT[s.type] or ""] or genericLayout(TYPE_PORTS[s.type] or 4)
+      local di = #devs + 1
+      devs[di] = { L = D, start = s.first, title = bw.names[s.lib] or (D.short .. " " .. i) }
+      for _, p in ipairs(D.ports) do
+        if p.ch <= s.count then
+          ports[#ports + 1] = { dev = di, lp = p, ch = s.first + p.ch - 1 }
+        end
       end
     end
   end
+  if devPage * DEV_PAGE >= #devs then devPage = 0 end
   bw.sig = bwSignature()
 end
 
@@ -376,7 +437,7 @@ local function applySetup(L, counts)
   if not L then return end
   extraN = {}
   if L.dynamic then
-    buildBuWizzDevs()
+    buildBridgeDevs()
     return
   end
   local list = { L.id }
@@ -409,6 +470,15 @@ end
 local function saveSetup()
   modelSetups[modelName] = setupKey()
   saveCfg()
+  mainFrames = 0            -- watch the new setup again
+end
+
+local function writeGuard(v)
+  local f = io.open(GUARD_FILE, "w")
+  if f then
+    io.write(f, v)
+    io.close(f)
+  end
 end
 
 local function portLabel(p)
@@ -761,55 +831,120 @@ end
 ---------------------------------------------------------------------
 -- Devices of the setup
 ---------------------------------------------------------------------
-local function drawDevice(di, x0, y0, bw)
-  local d = devs[di]
-  local L = d.L
-  local g = makeG(L, x0, y0, bw)
-  local pulse = (math.floor(getTime() / 15) % 2 == 0)
-  local last = d.start - 1
-  for _, p in ipairs(ports) do
-    if p.dev == di and p.ch > last then last = p.ch end
-  end
+-- The boxes are drawn once into a list of lcd calls ("display list") and only
+-- replayed afterwards. A box drawn from scratch costs thousands of Lua
+-- instructions; 4 boxes per frame were too much for the radio.
+local REAL_LCD = lcd
+local recList
+local REC = setmetatable({}, { __index = REAL_LCD })
+for _, n in ipairs({ "drawFilledRectangle", "drawRectangle", "drawLine",
+                     "drawFilledCircle", "drawCircle", "drawText" }) do
+  local f = REAL_LCD[n]
+  if f then REC[n] = function(...) recList[#recList + 1] = { f, ... } end end
+end
 
-  text(x0 + bw / 2, y0 - 16, string.upper(d.title) .. "  (CH" .. d.start .. "-" .. last .. ")",
-    CENTER + SMLSIZE + C.text)
-  L.draw(g)
+local function record(fn, ...)
+  recList = {}
+  lcd = REC
+  pcall(fn, ...)
+  lcd = REAL_LCD
+  local l = recList
+  recList = nil
+  return l
+end
 
-  for pi, p in ipairs(ports) do
-    if p.dev == di then
-      local lp = p.lp
-      local isAct = active and active.port == pi
-      local h = lp.hit
-      if isAct then g.R(h[1], h[2], h[3], h[4], pulse and C.accent or C.accentDim) end
-      if L.drawPort then L.drawPort(g, lp, isAct) end
-
-      -- port number: channel or the label printed on the box
-      if lp.num then
-        local s = (L.numbers == "label") and lp.label or tostring(p.ch)
-        local flags = (lp.align == "left") and 0 or CENTER
-        local col = isAct and C.black or (L.numColor or C.white)
-        text(g.PX(lp.num[1]) + (lp.dx or 0), g.PY(lp.num[2]) - (lp.dy or 7), s, flags + SMLSIZE + col)
-      end
-
-      local hx, hy = g.PX(h[1]), g.PY(h[2])
-      local hw, hh = g.PX(h[3]) - hx, g.PY(h[4]) - hy
-      if pi == sel then
-        lcd.drawRectangle(hx, hy, hw, hh, C.white, 2)
-      elseif pi == lastPort then
-        lcd.drawRectangle(hx, hy, hw, hh, C.accentDim, 1)
-      end
-      local idx = pi
-      addBtn(hx, hy, hw, hh, function()
-        sel = idx
-        startTest(idx)
-      end)
-    end
+local function replay(l)
+  for i = 1, #l do
+    local e = l[i]
+    e[1](e[2], e[3], e[4], e[5], e[6], e[7])
   end
 end
 
--- 1 device big, 2 side by side, 3-4 in a 2 x 2 grid
+-- step 1: the box itself, step 2: its ports (split, so one frame never does too much)
+local function buildCache(cc, d, di)
+  local L = d.L
+  local g = makeG(L, cc.x0, cc.y0, cc.bw)
+  if not cc.base then
+    cc.base = record(L.draw, g)
+    return
+  end
+  local last = d.start - 1
+  for pi, p in ipairs(ports) do
+    if p.dev == di then
+      if p.ch > last then last = p.ch end
+      local lp = p.lp
+      local h = lp.hit
+      local hx, hy = g.PX(h[1]), g.PY(h[2])
+      local e = { pi = pi, hx = hx, hy = hy, hw = g.PX(h[3]) - hx, hh = g.PY(h[4]) - hy }
+      if L.drawPort then
+        e.off = record(L.drawPort, g, lp, false)
+        e.on = record(L.drawPort, g, lp, true)
+      end
+      if lp.num then
+        e.s = (L.numbers == "label") and lp.label or tostring(p.ch)
+        e.nx = g.PX(lp.num[1]) + (lp.dx or 0)
+        e.ny = g.PY(lp.num[2]) - (lp.dy or 7)
+        e.flags = ((lp.align == "left") and 0 or CENTER) + SMLSIZE
+      end
+      e.fn = function()
+        sel = pi
+        startTest(pi)
+      end
+      cc.list[#cc.list + 1] = e
+    end
+  end
+  cc.title = string.upper(d.title) .. "  (CH" .. d.start .. "-" .. last .. ")"
+  cc.tx, cc.ty = F(cc.x0 + cc.bw / 2), F(cc.y0 - 16)
+  cc.done = true
+end
+
+local function drawDevice(di, x0, y0, bw)
+  local d = devs[di]
+  local key = F(x0) .. ":" .. F(y0) .. ":" .. F(bw)
+  if not d.cache or d.cache.key ~= key then
+    d.cache = { key = key, x0 = x0, y0 = y0, bw = bw, list = {} }
+  end
+  if not d.cache.done then
+    -- preparing a box is expensive: one step per frame, the others follow
+    if buildBudget > 0 then
+      buildBudget = buildBudget - 1
+      buildCache(d.cache, d, di)
+    end
+    if not d.cache.done then return end
+  end
+  local cc = d.cache
+  local L = d.L
+  local pulse = (math.floor(getTime() / 15) % 2 == 0)
+
+  lcd.drawText(cc.tx, cc.ty, cc.title, CENTER + SMLSIZE + C.text)
+  replay(cc.base)
+  for _, e in ipairs(cc.list) do
+    local pi = e.pi
+    local isAct = active and active.port == pi
+    if isAct then lcd.drawFilledRectangle(e.hx, e.hy, e.hw, e.hh, pulse and C.accent or C.accentDim) end
+    if e.off then replay(isAct and e.on or e.off) end
+    -- port number: channel or the label printed on the box
+    if e.s then
+      lcd.drawText(e.nx, e.ny, e.s, e.flags + (isAct and C.black or (L.numColor or C.white)))
+    end
+    if pi == sel then
+      lcd.drawRectangle(e.hx, e.hy, e.hw, e.hh, C.white, 2)
+    elseif pi == lastPort then
+      lcd.drawRectangle(e.hx, e.hy, e.hw, e.hh, C.accentDim, 1)
+    end
+    addBtn(e.hx, e.hy, e.hw, e.hh, e.fn)
+  end
+end
+
+-- 1 device big, 2 side by side, 3-4 in a 2 x 2 grid (more: 4 per page)
 local function drawDevices(top, bottom)
+  buildBudget = 1
   local n = #devs
+  local d0 = 0
+  if n > DEV_PAGE then
+    d0 = devPage * DEV_PAGE
+    n = math.min(DEV_PAGE, n - d0)
+  end
   if n == 0 and setup and setup.dynamic then
     local k1, k2 = "bwEmpty1", "bwEmpty2"
     if not bw.ok then
@@ -831,10 +966,11 @@ local function drawDevices(top, bottom)
   local gap = 10
   local cellW = (W - gap * (cols + 1)) / cols
   local cellH = (bottom - top - 4) / rows
-  for di = 1, n do
+  for k = 1, n do
+    local di = d0 + k
     local L = devs[di].L
-    local c = (di - 1) % cols
-    local r = math.floor((di - 1) / cols)
+    local c = (k - 1) % cols
+    local r = math.floor((k - 1) / cols)
     local availH = cellH - labelH - 4
     local ratio = L.w / L.h
     local bw = math.min(cellW, availH * ratio)
@@ -851,6 +987,15 @@ end
 ---------------------------------------------------------------------
 -- Screens
 ---------------------------------------------------------------------
+local function openSetup()
+  stopTest()
+  setupPage = 1
+  for i, s in ipairs(setups) do
+    if s == setup then setupPage = math.floor((i - 1) / SETUP_ROWS) + 1 end
+  end
+  screen = "setup"
+end
+
 local function drawWarning()
   lcd.clear(C.bg)
   rect(0, 0, W, 38, C.warn)
@@ -862,8 +1007,16 @@ local function drawWarning()
   text(W / 2, y + 45, string.format(T("warn2"), CFG.amplitude), CENTER + C.text)
   text(W / 2, y + 70, T("warn3"), CENTER + C.text)
 
-  button(W / 2 - 120, H - Y(80), 240, 46, T("start"),
-    function() screen = "main" end, "primary")
+  button(W / 2 - 230, H - Y(80), 240, 46, T("start"), function()
+    if guardTripped then
+      openSetup()
+      toastMsg(T("guard"))
+    else
+      screen = "main"
+    end
+  end, "primary")
+  button(W / 2 + 20, H - Y(80), 210, 46, T("chooseBox"), function() openSetup() end)
+  drawToast(H - Y(80) - 34)
   text(W / 2, H - 22, APP_NAME .. " " .. VERSION .. "  ·  by MisterCreators Custom MOCs",
     CENTER + SMLSIZE + C.text)
 end
@@ -878,19 +1031,26 @@ local function drawTitleControls()
   for i = 0, 4 do
     lcd.drawLine(ax - 4 + i, ay + i, ax + 4 - i, ay + i, SOLID, C.white)
   end
-  addBtn(x, 0, w, 38, function()
-    stopTest()
-    setupPage = 1
-    for i, s in ipairs(setups) do
-      if s == setup then setupPage = math.floor((i - 1) / SETUP_ROWS) + 1 end
-    end
-    screen = "setup"
-  end)
+  addBtn(x, 0, w, 38, openSetup)
 
   -- extra boxes: a switch per extra, or a counter when the same box can be added several times
   if not setup then return end
   local ex = setup.extras
   local ex0, exW = x + w + 6, W - 48 - 6 - (x + w + 6)
+  -- bridge with more than 4 devices: page switch instead
+  if setup.dynamic and #devs > DEV_PAGE then
+    local pages = math.ceil(#devs / DEV_PAGE)
+    local function go(dp)
+      stopTest()
+      devPage = dp % pages
+      sel, lastPort = nil, nil
+    end
+    button(ex0, 6, 28, 26, "<", function() go(devPage - 1) end)
+    rect(ex0 + 30, 6, exW - 60, 26, C.bar)
+    text(ex0 + exW / 2, 11, (devPage + 1) .. "/" .. pages, CENTER + SMLSIZE + C.white)
+    button(ex0 + exW - 28, 6, 28, 26, ">", function() go(devPage + 1) end)
+    return
+  end
   local function change(i, n)
     stopTest()
     local counts = {}
@@ -975,6 +1135,7 @@ local function drawSetup()
       addBtn(6, y, W - 12, rh - 4, function()
         if s ~= setup then applySetup(s, {}) end
         saveSetup()
+        guardTripped = false
         toastMsg(T("saved") .. (modelName ~= "" and modelName or "?"))
         screen = "main"
       end)
@@ -991,6 +1152,7 @@ local function drawSetup()
     button(W - 140, by, 65, 44, "<", function() setupPage = (setupPage - 2) % pages + 1 end)
     button(W - 70, by, 70, 44, ">", function() setupPage = setupPage % pages + 1 end)
   end
+  drawToast(by - 32)
 end
 
 local function drawBuild()
@@ -1120,6 +1282,11 @@ local function init()
   C.live       = lcd.RGB(120, 210, 255)
 
   loadCfg()
+  local gf = io.open(GUARD_FILE, "r")
+  if gf then
+    guardTripped = (io.read(gf, 1) == "1")
+    io.close(gf)
+  end
   loadLayouts()
   local mi = model.getInfo and model.getInfo()
   modelName = (mi and mi.name) or ""
@@ -1180,6 +1347,10 @@ local function run(event, touchState)
   if screen == "warn" then
     drawWarning()
   elseif screen == "main" then
+    -- guard: set while a new setup is shown for the first time, cleared when it runs
+    mainFrames = mainFrames + 1
+    if mainFrames == 1 then writeGuard("1")
+    elseif mainFrames == 20 then writeGuard("0") end
     drawMain()
   elseif screen == "setup" then
     drawSetup()

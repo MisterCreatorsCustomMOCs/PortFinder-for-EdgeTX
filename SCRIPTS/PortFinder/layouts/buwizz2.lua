@@ -3,7 +3,7 @@
 --
 -- Four Power Functions outputs: 1 top left, 2 bottom left, 3 bottom right,
 -- 4 top right. Channels: outputs 1-4 = the next 4 channels. Up to 4 BuWizz 2.0.
--- Used with the MC BuWizz Bridge (internal CRSF module), see BuWizz Connect.
+-- Used with the MC Brick Bridge (internal CRSF module), see Brick Connect.
 -- Layout format: see rcboxmini.lua or README.md
 
 local C = {

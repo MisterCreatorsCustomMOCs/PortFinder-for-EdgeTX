@@ -5,7 +5,7 @@
 -- on the RC Box Mini and the BuWizz 2.0: 1 top left, 2 bottom left,
 -- 3 bottom right, 4 top right. The two Power Functions ports 5 and 6 are in
 -- the middle. Channels: ports 1-6 = the next 6 channels.
--- Used with the MC BuWizz Bridge (internal CRSF module), see BuWizz Connect.
+-- Used with the MC Brick Bridge (internal CRSF module), see Brick Connect.
 -- Layout format: see rcboxmini.lua or README.md
 
 local C = {
