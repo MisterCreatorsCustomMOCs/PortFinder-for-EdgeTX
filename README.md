@@ -32,6 +32,7 @@ the choice **for each model**.
 | LEGO City Hub | 2 PU (A, B) | **– 1x +** counter | 1 to 4 hubs (8 with the bridge) |
 | LEGO BOOST Move Hub | 2 built-in motors (A, B), 2 PU (C, D) | **– 1x +** counter | 1 to 4 hubs |
 | LEGO DUPLO train | motor, light, sound | **– 1x +** counter | 1 to 4 trains |
+| Generic 16 CH | 16 fields CH1–16 | – | any receiver or module, for testing channels without a box layout |
 
 The boxes use the channels one after the other: with 2x MK 6.0 + MK 4.0 the first MK 6.0 is on
 CH1–6, the second on CH7–12 and the MK 4.0 on CH13–16.
@@ -128,6 +129,7 @@ the RC Box Mini and the BuWizz 2.0.
    /SCRIPTS/PortFinder/layouts/cityhub.lua
    /SCRIPTS/PortFinder/layouts/movehub.lua
    /SCRIPTS/PortFinder/layouts/duplotrain.lua
+   /SCRIPTS/PortFinder/layouts/generic16.lua
    ```
 4. **Updating from v1.x:** delete `/SCRIPTS/TOOLS/RCBoxPortFinder.lua` (and `PortFinder.lua`
    from v1.0), otherwise the old tool stays in the menu.
@@ -246,6 +248,8 @@ transmitter may look slightly different.
 
 ## Changelog
 
+- **Layout Generic 16 CH**: 16 plain fields for CH1–16, to test every channel without a box
+  layout. Only the new file `generic16.lua` is needed, the tool itself stays at v2.3.
 - **v2.3**: Fixed: 4x BuWizz 2.0 (and other big setups) made the tool hang on the radio. Boxes
   are now prepared once and then only redrawn, which needs about 80 % less computing time.
   **Choose box** button on the safety screen, and the box list opens by itself after a start
